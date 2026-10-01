@@ -8,7 +8,8 @@ test.skip(!process.env.REDAY_E2E_CLOUD, 'ตั้ง REDAY_E2E_CLOUD=1 เพ�
 
 test('โหมดออนไลน์: สมัคร ซิงก์ข้อมูล โหลดจากเซิร์ฟเวอร์ และลบบัญชี', async ({ page }) => {
   test.setTimeout(120_000);
-  const email = `reday-e2e-${Date.now()}@mailinator.com`;
+  // ส่วนสุ่มกันอีเมลซ้ำเมื่อสองเบราว์เซอร์รันขนานกันในมิลลิวินาทีเดียวกัน
+  const email = `reday-e2e-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@mailinator.com`;
   const password = 'e2e-pass-' + Math.random().toString(36).slice(2, 8);
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
