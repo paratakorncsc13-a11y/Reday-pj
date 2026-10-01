@@ -591,8 +591,7 @@
     });
 
     test('onboarding: มีปุ่ม ออกจากระบบ ในหัวหน้า (ไม่ติดอยู่ในขั้นตอนตั้งค่า)', () => {
-      let went = null;
-      const acts = P.onboarding.actions({ go: (p) => { went = p; } });
+      const acts = P.onboarding.actions({ go() {} });
       eq(acts.length, 1);
       eq(acts[0].textContent, 'ออกจากระบบ');
       S.completeOnboarding({ usual_bedtime: '01:00', target_bedtime: '23:30', target_wake: '08:00', meal_delay_minutes: 30, track_meals: true, tasks: [], chores: [] });

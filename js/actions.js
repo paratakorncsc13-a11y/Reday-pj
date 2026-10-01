@@ -5,7 +5,7 @@
  */
 (function (g) {
   const RD = (g.RD = g.RD || {});
-  const { h, icon, toast, openSheet, openMenu, confirmDialog, pickTime, field, segmented } = RD.ui;
+  const { h, toast, openSheet, openMenu, confirmDialog, pickTime, segmented } = RD.ui;
   const S = RD.store;
   const T = RD.time;
   const E = RD.engine;

@@ -7,7 +7,6 @@
   /** เหมือน el.append แต่ข้าม null/false (el.append(null) จะพิมพ์คำว่า "null" ลงหน้า) */
   const add = (el, ...nodes) => append(el, nodes);
   const S = RD.store;
-  const T = RD.time;
   const C = RD.config;
   const A = RD.actions;
   const P = (RD.pages = RD.pages || {});

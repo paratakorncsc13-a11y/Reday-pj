@@ -5,7 +5,6 @@
  */
 (function (g) {
   const RD = (g.RD = g.RD || {});
-  const T = RD.time;
 
   function hash(str) {
     let h = 5381;

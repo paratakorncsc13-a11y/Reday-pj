@@ -574,7 +574,6 @@
 
   function buildCopy(s) {
     const { profile, ctx, now, energy, light, wokeAt, wakeChip, trackMeals, mealStatus, firstMealAt, recMealAt, delay, sleep, targetBedMin, taskCard, taskEmpty, choreCard, choreEmpty } = s;
-    const cutoff = cutoffOf(profile);
     const name = (profile.display_name || '').trim();
     const greeting = M.greeting(T.minuteOfDay(now), name, s.hasBedtimeTonight);
 
@@ -646,8 +645,6 @@
   function resetFrom(nowIn, plan) {
     const now = D(nowIn);
     const items = [];
-    const ctx = { userId: '', logDate: plan.logDate };
-
     if (plan.trackMeals && plan.nextMeal && plan.nextMeal.status === 'unknown') {
       items.push({ kind: 'meal', title: 'กินมื้อแรกเบา ๆ', sub: 'อะไรก็ได้ที่กินได้ตอนนี้', action: 'log_meal', minutes: null });
     }
