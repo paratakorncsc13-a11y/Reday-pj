@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ReDay v2 — ชุดทดสอบ</title>
+  <link rel="stylesheet" href="../css/app.css">
+  <style>
+    body { font: 15px/1.6 "IBM Plex Sans Thai", "Leelawadee UI", Tahoma, sans-serif; margin: 0; padding: 24px; background: #F6F1EA; color: #1C1917; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .sum { font-weight: 700; margin: 8px 0 20px; }
+    .sum.ok { color: #4F6F52; } .sum.bad { color: #b3261e; }
+    h2.suite { font-size: 16px; margin: 22px 0 6px; }
+    ul.res { list-style: none; padding: 0; margin: 0; }
+    ul.res li { padding: 4px 0; border-bottom: 1px solid rgba(28,25,23,.07); }
+    li.pass::before { content: "✓ "; color: #4F6F52; font-weight: 700; }
+    li.fail::before { content: "✗ "; color: #b3261e; font-weight: 700; }
+    .err { color: #b3261e; font-size: 13px; white-space: pre-wrap; margin-left: 20px; }
+    #stage { position: absolute; left: -9999px; top: 0; width: 430px; }
+  </style>
+</head>
+<body>
+  <h1>ReDay v2 — ชุดทดสอบ</h1>
+  <div class="muted small">unit (rule engine, เวลา, ข้อความ) + ฝั่งแอป (store, หน้าจอ, สแกนคำต้องห้ามและ AM/PM) — ข้อมูลทดสอบแยกจากข้อมูลจริง</div>
+  <div id="summary" class="sum">กำลังรัน…</div>
+  <div id="out"></div>
+
+  <!-- โครงที่ component ต้องใช้ (ซ่อนไว้นอกจอ) -->
+  <div id="stage"><div id="toast-slot"></div><div id="overlay"></div><div id="view"></div></div>
+
+  <script>window.RD_STORAGE_PREFIX = 'reday2test';</script>
+  <script src="../js/config.js"></script>
+  <script src="../js/time.js"></script>
+  <script src="../js/messages.js"></script>
+  <script src="../js/engine.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/ui.js"></script>
+  <script src="../js/actions.js"></script>
+  <script src="../js/pages/public.js"></script>
+  <script src="../js/pages/onboarding.js"></script>
+  <script src="../js/pages/today.js"></script>
+  <script src="../js/pages/plan.js"></script>
+  <script src="../js/pages/room.js"></script>
+  <script src="../js/pages/summary.js"></script>
+  <script src="../js/pages/me.js"></script>
+  <script src="../js/pages/guide.js"></script>
+  <script src="testkit.js"></script>
+  <script src="engine.tests.js"></script>
+  <script src="app.tests.js"></script>
+  <script>
+    (async function () {
+      if (window.__appTestsReady) await window.__appTestsReady;
+      const results = await TestKit.finish();
+      const fails = results.filter((r) => !r.pass);
+      const sum = document.getElementById('summary');
+      sum.textContent = fails.length
+        ? `ไม่ผ่าน ${fails.length} จาก ${results.length} ข้อ`
+        : `ผ่านทั้งหมด ${results.length} ข้อ`;
+      sum.className = 'sum ' + (fails.length ? 'bad' : 'ok');
+      const out = document.getElementById('out');
+      let last = null, ul = null;
+      results.forEach((r) => {
+        if (r.suite !== last) {
+          const h = document.createElement('h2'); h.className = 'suite'; h.textContent = r.suite; out.appendChild(h);
+          ul = document.createElement('ul'); ul.className = 'res'; out.appendChild(ul); last = r.suite;
+        }
+        const li = document.createElement('li');
+        li.className = r.pass ? 'pass' : 'fail';
+        li.textContent = r.name;
+        if (!r.pass) { const e = document.createElement('div'); e.className = 'err'; e.textContent = r.error; li.appendChild(e); }
+        ul.appendChild(li);
+      });
+      window.__results = { total: results.length, failed: fails.map((r) => ({ name: r.name, error: r.error })) };
+    })();
+  </script>
+</body>
+</html>

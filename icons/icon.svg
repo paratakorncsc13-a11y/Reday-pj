@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ReDay">
+  <rect width="512" height="512" rx="116" fill="#F6F1EA"/>
+  <path d="M146 318a110 110 0 0 1 220 0z" fill="#C45C26"/>
+  <rect x="96" y="338" width="320" height="22" rx="11" fill="#3F3D56"/>
+  <rect x="148" y="382" width="216" height="22" rx="11" fill="#D97706" opacity="0.85"/>
+  <rect x="204" y="426" width="104" height="22" rx="11" fill="#6B8F71" opacity="0.85"/>
+</svg>

@@ -1,0 +1,22 @@
+{
+  "name": "reday",
+  "version": "2.0.0",
+  "private": true,
+  "description": "ReDay — รีเซ็ตวันนี้ (static web app, ไม่มี build step; package.json ใช้เฉพาะเครื่องมือพัฒนา)",
+  "scripts": {
+    "serve": "node scripts/serve.mjs",
+    "test": "playwright test",
+    "test:cli": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test.ps1",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "eslint": "^10.11.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "supabase": "^2.119.0"
+  }
+}
