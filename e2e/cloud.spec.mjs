@@ -13,7 +13,7 @@ test('โหมดออนไลน์: สมัคร ซิงก์ข้�
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
 
-  await page.goto('/index.html?nosw=1&now=' + encodeURIComponent('2026-10-01T10:00:00+07:00') + '#/auth');
+  await page.goto('index.html?nosw=1&now=' + encodeURIComponent('2026-10-01T10:00:00+07:00') + '#/auth');
   expect(await page.evaluate(() => RD.store.cloud), 'ต้องอยู่ในโหมดออนไลน์').toBe(true);
 
   // สมัคร
@@ -53,7 +53,7 @@ test('โหมดออนไลน์: สมัคร ซิงก์ข้�
   await expect(page.getByText('08:15 น.').first()).toBeVisible({ timeout: 20_000 });
 
   // ลบบัญชี
-  await page.goto('/index.html?nosw=1&now=' + encodeURIComponent('2026-10-01T10:00:00+07:00') + '#/me');
+  await page.goto('index.html?nosw=1&now=' + encodeURIComponent('2026-10-01T10:00:00+07:00') + '#/me');
   await page.getByRole('button', { name: /^ลบบัญชี/ }).click();
   await page.getByLabel('พิมพ์ ลบบัญชี เพื่อยืนยัน').fill('ลบบัญชี');
   await page.getByRole('button', { name: 'ลบบัญชีถาวร' }).click();

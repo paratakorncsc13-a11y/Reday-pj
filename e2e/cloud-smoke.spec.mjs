@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 test('โหมดออนไลน์: โหลดแอปได้ ไม่มี error และล็อกอินด้วยรหัสผิดได้ข้อความที่ถูกต้องจากเซิร์ฟเวอร์', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/index.html?nosw=1#/auth');
+  await page.goto('index.html?nosw=1#/auth');
   expect(await page.evaluate(() => RD.store.cloud)).toBe(true);
   expect(await page.evaluate(() => RD.store.isLoggedIn())).toBe(false);
 

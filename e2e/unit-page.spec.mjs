@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // รันหน้าทดสอบเดิม (tests/index.html: engine + app + iframe 390×844) ในเบราว์เซอร์จริง แล้วรายงานรายข้อ
 test('ชุดทดสอบในแอป (tests/index.html) ผ่านทั้งหมด', async ({ page }) => {
-  await page.goto('/tests/index.html');
+  await page.goto('tests/index.html');
   await page.waitForFunction(() => window.__results, null, { timeout: 170_000 });
   const res = await page.evaluate(() => window.__results);
   const detail = res.failed.map((f) => `${f.name}\n   ${f.error}`).join('\n');
@@ -16,7 +16,7 @@ for (const [name, hash, heading] of [['หน้าแรก', '#/', /รีเ�
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => m.type() === 'error' && !/fonts\.g(oogleapis|static)/.test(m.text()) && errors.push(m.text()));
-    await page.goto(`/index.html?nosw=1&ns=pw-smoke${hash}`);
+    await page.goto(`index.html?nosw=1&ns=pw-smoke${hash}`);
     await expect(page.locator('h1').first()).toContainText(heading);
     expect(errors).toEqual([]);
   });

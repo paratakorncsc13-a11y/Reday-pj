@@ -104,7 +104,7 @@ Supabase CLI ติดตั้งเป็น devDependency แล้ว (`npx 
 - ออกจากระบบ: ส่งส่วนที่ค้างให้จบก่อน แล้วลบ cache ในเครื่อง (เครื่องที่ใช้ร่วมกัน)
 - schema + RLS อยู่ใน `supabase/migrations/` ทดสอบ RLS ด้วย `npx supabase db query --linked -f supabase/tests/rls.sql` (จบด้วย `RLS_TEST_PASSED` เสมอ และ rollback)
 - ตั้งค่า Auth (ปิดยืนยันอีเมล, URL ที่ลิงก์รีเซ็ตพากลับมา) อยู่ใน `supabase/config.toml` ส่งขึ้นโปรเจกต์ด้วย `npx supabase config diff` ดูผลต่าง แล้ว `npx supabase config push`
-- เทสต์โหมดออนไลน์กับของจริง: `e2e/cloud-smoke.spec.mjs` (รันกับ `npm test` ปกติ ไม่สร้างบัญชี) และ `e2e/cloud.spec.mjs` (สมัคร→ซิงก์→ลบบัญชี รันเมื่อสั่ง `REDAY_E2E_CLOUD=1 npx playwright test e2e/cloud.spec.mjs`)
+- เทสต์โหมดออนไลน์กับของจริง: `e2e/cloud-smoke.spec.mjs` (รันกับ `npm test` ปกติ ไม่สร้างบัญชี) และ `e2e/cloud.spec.mjs` (สมัคร→ซิงก์→ลบบัญชี รันเมื่อสั่ง `REDAY_E2E_CLOUD=1 npx playwright test e2e/cloud.spec.mjs`) ทดสอบเว็บที่ deploy แล้วด้วย `REDAY_BASE_URL=https://paratakorncsc13-a11y.github.io/Reday-pj/` (ลงท้ายด้วย `/`)
 
 ### จำลองเวลา (สำหรับสาธิต/ทดสอบ)
 
