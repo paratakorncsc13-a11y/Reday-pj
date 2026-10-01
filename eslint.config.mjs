@@ -17,6 +17,7 @@ export default [
   },
   {
     files: ['scripts/**/*.mjs', 'e2e/**/*.mjs', '*.mjs'],
-    languageOptions: { sourceType: 'module', ecmaVersion: 2023, globals: { ...globals.node, ...globals.browser } },
+    // RD: ตัวแปรกลางของแอป ใช้ในโค้ดที่ส่งเข้า page.evaluate (รันฝั่งเบราว์เซอร์)
+    languageOptions: { sourceType: 'module', ecmaVersion: 2023, globals: { ...globals.node, ...globals.browser, RD: 'readonly' } },
   },
 ];
