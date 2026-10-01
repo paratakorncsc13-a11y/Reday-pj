@@ -6,7 +6,13 @@
 
   RD.config = {
     version: '2.0.0',
-    consentVersion: '2026-10-01-draft',
+    consentVersion: '2026-10-02-draft',
+    // Supabase (โหมดออนไลน์): url กับ publishable key ออกแบบให้อยู่ในโค้ดหน้าเว็บได้ ความปลอดภัยอยู่ที่ RLS ในฐานข้อมูล
+    // ปิดได้ด้วย ?local=1 และปิดอัตโนมัติเมื่อมี ?ns= (ชุดทดสอบ) เพื่อไม่ให้ทดสอบไปแตะฐานข้อมูลจริง
+    supabase: {
+      url: 'https://ksazuquebmcyjuikykqb.supabase.co',
+      publishableKey: 'sb_publishable_SWlfsv7_er1-iq5iUAAmNQ_rF3YiqBW',
+    },
     // คีย์ใน localStorage (ชุดทดสอบตั้ง RD_STORAGE_PREFIX เพื่อไม่ให้ไปแตะข้อมูลจริง)
     storagePrefix:
       g.RD_STORAGE_PREFIX ||

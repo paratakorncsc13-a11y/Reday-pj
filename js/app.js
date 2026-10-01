@@ -70,6 +70,7 @@
       return null;
     }
     if (def.access === 'reset') {
+      if (S.inRecovery()) return null; // โหมดออนไลน์: มาจากลิงก์ในอีเมล (มี session ชั่วคราว)
       if (logged) return '/today';
       return sessionStorage.getItem('reday2.reset') ? null : '/auth/forgot';
     }
@@ -291,7 +292,20 @@
     const q = new URLSearchParams(location.search);
     if (q.get('now')) T.clock.setFrom(q.get('now'));
 
+    let syncToldBad = false;
     S.subscribe((what) => {
+      if (what === 'sync') {
+        // ซิงก์ขึ้นเซิร์ฟเวอร์ไม่ได้ (เช่น ออฟไลน์): ข้อมูลยังอยู่ในเครื่องและลองใหม่เอง แจ้งครั้งเดียวต่อช่วงที่มีปัญหา
+        if (S.syncState() === 'error' && !syncToldBad) {
+          syncToldBad = true;
+          RD.ui.toast('ยังบันทึกขึ้นเซิร์ฟเวอร์ไม่ได้ ข้อมูลยังอยู่ในเครื่องนี้และจะลองใหม่เอง', { kind: 'warn' });
+        } else if (S.syncState() === 'ok') syncToldBad = false;
+        return;
+      }
+      if (what === 'recovery') {
+        go('/auth/reset');
+        return;
+      }
       if (what === 'session') {
         activeNudge = null;
         return;
@@ -305,14 +319,25 @@
       scheduleRender('data');
     });
     window.addEventListener('hashchange', onRouteChange);
+    let hiddenAt = 0;
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) scheduleRender('data');
+      if (document.hidden) {
+        hiddenAt = Date.now();
+        return;
+      }
+      // โหมดออนไลน์: กลับมาที่แท็บหลังหายไปสักพัก ดึงข้อมูลล่าสุด (เผื่อแก้จากอีกเครื่อง)
+      if (S.cloud && hiddenAt && Date.now() - hiddenAt > 20000) S.refresh();
+      scheduleRender('data');
     });
     let n = 0;
     setInterval(() => tick(++n), 1000);
 
     if (!location.hash) location.replace('#/');
-    onRouteChange();
+    // โหมดออนไลน์: รอโหลด session และข้อมูลจากเซิร์ฟเวอร์ก่อนวาดหน้าแรก (โหมดในเครื่องผ่านทันที)
+    S.ready.then(() => {
+      if (S.takeLoadError()) RD.ui.toast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ในตอนนี้ ลองเข้าสู่ระบบอีกครั้ง', { kind: 'warn' });
+      onRouteChange();
+    });
 
     if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !q.get('nosw')) {
       navigator.serviceWorker.register('sw.js').catch(() => {});

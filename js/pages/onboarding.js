@@ -198,7 +198,9 @@
 
   function finish(ctx) {
     const code = S.takePendingRecovery();
-    const recovery = code
+    const recovery = S.cloud
+      ? null // โหมดออนไลน์ใช้อีเมลรีเซ็ตรหัสผ่าน ไม่มีรหัสกู้คืน
+      : code
       ? h(
           'div',
           { class: 'card stack-sm' },

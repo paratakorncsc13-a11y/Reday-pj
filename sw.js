@@ -5,7 +5,7 @@
 const CACHE = 'reday-v2.0.0';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
-  'js/config.js', 'js/time.js', 'js/messages.js', 'js/engine.js', 'js/store.js', 'js/ui.js', 'js/actions.js',
+  'js/config.js', 'js/time.js', 'js/messages.js', 'js/engine.js', 'js/vendor/supabase.js', 'js/remote.js', 'js/store.js', 'js/ui.js', 'js/actions.js',
   'js/pages/public.js', 'js/pages/onboarding.js', 'js/pages/today.js', 'js/pages/plan.js', 'js/pages/room.js',
   'js/pages/summary.js', 'js/pages/me.js', 'js/pages/guide.js', 'js/app.js',
 ];

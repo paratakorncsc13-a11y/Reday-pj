@@ -2,10 +2,10 @@ import js from '@eslint/js';
 import globals from 'globals';
 
 // โค้ดแอปเป็น classic script (ไม่ใช่ module) ใช้ namespace กลาง RD และห่อด้วย IIFE
-const appGlobals = { RD: 'writable', RD_STORAGE_PREFIX: 'readonly', TestKit: 'writable' };
+const appGlobals = { RD: 'writable', RD_STORAGE_PREFIX: 'readonly', TestKit: 'writable', supabase: 'readonly' };
 
 export default [
-  { ignores: ['node_modules/**', 'test-results/**', 'playwright-report/**'] },
+  { ignores: ['node_modules/**', 'test-results/**', 'playwright-report/**', 'js/vendor/**'] },
   js.configs.recommended,
   {
     files: ['js/**/*.js', 'tests/**/*.js', 'sw.js'],

@@ -10,6 +10,10 @@
   const RD = (g.RD = g.RD || {});
   const T = RD.time;
   const C = RD.config;
+  // โหมดออนไลน์ (Supabase): บัญชีและข้อมูลอยู่บนเซิร์ฟเวอร์ ในหน่วยความจำ + localStorage เป็น cache และซิงก์เบื้องหลัง (ดู remote.js)
+  // โหมดในเครื่อง (เทสต์, ?local=1): บัญชีและข้อมูลอยู่ใน localStorage ล้วน
+  const R = RD.remote && RD.remote.enabled ? RD.remote : null;
+  const cloud = !!R;
 
   // ---------- storage ----------
   const mem = {};
@@ -57,12 +61,20 @@
     const a = ls.get(KEY_ACCOUNTS, []);
     return Array.isArray(a) ? a.filter((x) => x && x.id && x.email) : [];
   };
-  let accounts = loadAccounts();
-  let sessionId = ls.get(KEY_SESSION, null);
+  let accounts = cloud ? [] : loadAccounts();
+  let sessionId = cloud ? null : ls.get(KEY_SESSION, null);
   let db = null;
   let persistOk = true;
   const listeners = new Set();
   let pendingRecovery = null;
+  // โหมดออนไลน์
+  let remoteUser = null;
+  let syncer = null;
+  let syncError = false;
+  let recovery = false; // เข้ามาจากลิงก์ในอีเมลรีเซ็ตรหัสผ่าน
+  let entering = false;
+  let loadError = false;
+  const dirtyKey = (id) => `${PREFIX}.dirty.${id}`;
 
   function emit(what) {
     listeners.forEach((fn) => {
@@ -79,6 +91,10 @@
   }
   function persist(silent) {
     if (db && sessionId) persistOk = ls.set(keyData(sessionId), db);
+    if (syncer) {
+      ls.set(dirtyKey(sessionId), 1); // เผื่อปิดหน้าก่อนซิงก์เสร็จ: เปิดครั้งหน้าข้อมูลในเครื่องที่ยังไม่ขึ้นเซิร์ฟเวอร์ต้องชนะ
+      syncer.schedule();
+    }
     if (!silent) emit('data');
   }
 
@@ -148,7 +164,7 @@
       persistOk = ls.set(keyData(acc.id), db);
     }
   }
-  loadSession();
+  if (!cloud) loadSession();
 
   // เปิดหลายแท็บ: เมื่อแท็บอื่นเขียนข้อมูล ให้โหลดของใหม่เข้ามา ไม่ใช่เขียนทับด้วยข้อมูลเก่าในหน่วยความจำ
   function syncFromStorage() {
@@ -160,6 +176,7 @@
   if (g.addEventListener) {
     g.addEventListener('storage', (e) => {
       if (e.storageArea && e.storageArea !== g.localStorage) return;
+      if (cloud) return; // โหมดออนไลน์: ซิงก์ข้ามแท็บ/เครื่องผ่านเซิร์ฟเวอร์ (refresh) และเหตุการณ์ออกจากระบบของ Supabase Auth
       if (e.key === null) return syncFromStorage(); // ล้างทั้งหมดจากแท็บอื่น
       if (e.key === KEY_ACCOUNTS || e.key === KEY_SESSION) return syncFromStorage();
       if (sessionId && e.key === keyData(sessionId)) {
@@ -215,12 +232,214 @@
   const normCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
+  // ---------- โหมดออนไลน์: เข้า/ออกจากระบบ ซิงก์ รีเซ็ตรหัสผ่านทางอีเมล ----------
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  function startSync(userId, baseDb) {
+    if (syncer) syncer.stop();
+    syncer = R.createSyncer(userId, () => db, (st, err) => {
+      if (st === 'ok') {
+        ls.del(dirtyKey(userId));
+        if (syncError) {
+          syncError = false;
+          emit('sync');
+        }
+      } else {
+        console.warn('ซิงก์ขึ้นเซิร์ฟเวอร์ไม่สำเร็จ จะลองใหม่', err && (err.message || err));
+        if (!syncError) {
+          syncError = true;
+          emit('sync');
+        }
+      }
+    });
+    syncer.rebase(baseDb);
+  }
+
+  /** โหลดข้อมูลของผู้ใช้จากเซิร์ฟเวอร์เข้าหน่วยความจำ (ถ้าออฟไลน์ใช้ cache ในเครื่อง; ถ้า cache มีส่วนที่ยังไม่ซิงก์ ให้ cache ชนะแล้วส่งขึ้นไป) */
+  async function enterSession(user) {
+    let remoteDb = null;
+    try {
+      remoteDb = await R.loadAll(user.id);
+    } catch (e) {
+      console.warn('โหลดข้อมูลจากเซิร์ฟเวอร์ไม่ได้', e && e.message);
+    }
+    const cached = readDb(user.id);
+    const dirty = !!ls.get(dirtyKey(user.id), false);
+    let base;
+    if (cached && (dirty || !remoteDb)) {
+      db = cached;
+      base = remoteDb || cached;
+    } else if (remoteDb) {
+      db = normalizeDb(remoteDb);
+      base = remoteDb;
+    } else {
+      loadError = true;
+      return { ok: false, error: 'network' };
+    }
+    sessionId = user.id;
+    remoteUser = user;
+    syncError = false;
+    startSync(user.id, base);
+    persistOk = ls.set(keyData(user.id), db);
+    if (cached && dirty) syncer.schedule(0);
+    return { ok: true };
+  }
+
+  async function cloudSignup(email, name, password) {
+    entering = true;
+    try {
+      const r = await R.signUp({ email, password, name: String(name || '').trim(), consentVersion: C.consentVersion });
+      if (!r.ok) return r;
+      const ent = await enterSession(r.user);
+      if (!ent.ok) return ent;
+      track('signup_completed');
+      emit('session');
+      return { ok: true };
+    } finally {
+      entering = false;
+    }
+  }
+  async function cloudLogin(email, password) {
+    entering = true;
+    try {
+      const r = await R.signIn(email, password || '');
+      if (!r.ok) return r;
+      const ent = await enterSession(r.user);
+      if (!ent.ok) return ent;
+      emit('session');
+      return { ok: true };
+    } finally {
+      entering = false;
+    }
+  }
+  /** ออกจากระบบ: ปิดหน้าจอทันที แล้วส่งส่วนที่ค้างให้จบก่อน จึงลบ cache ในเครื่อง (เครื่องที่ใช้ร่วมกัน) และออกจาก Supabase Auth */
+  function cloudLogout() {
+    const s = syncer;
+    const d = db;
+    const id = sessionId;
+    syncer = null;
+    sessionId = null;
+    db = null;
+    remoteUser = null;
+    recovery = false;
+    emit('session');
+    (async () => {
+      if (s) {
+        s.useDb(() => d);
+        s.schedule(0);
+        for (let i = 0; i < 40 && s.isBusy(); i++) await sleep(150);
+        s.stop();
+      }
+      if (id && !syncError) {
+        ls.del(keyData(id));
+        ls.del(dirtyKey(id));
+      }
+      syncError = false;
+      await R.signOut();
+    })();
+  }
+  /** เซสชันหมดอายุ/ออกจากระบบจากแท็บอื่น: ทิ้งสถานะในหน่วยความจำ (ไม่ลบ cache) */
+  function forgetLocal() {
+    if (syncer) syncer.stop();
+    syncer = null;
+    sessionId = null;
+    db = null;
+    remoteUser = null;
+    recovery = false;
+    emit('session');
+  }
+  async function cloudChangePassword(current, next) {
+    if (!sessionId || !remoteUser) return { ok: false, error: 'no_session' };
+    if (!current) return { ok: false, error: 'wrong_current' };
+    const v = await R.signIn(remoteUser.email, current); // ตรวจรหัสเดิมกับเซิร์ฟเวอร์
+    if (!v.ok) return { ok: false, error: v.error === 'invalid' ? 'wrong_current' : v.error };
+    if (!next || next.length < 6) return { ok: false, error: 'short_password' };
+    const u = await R.updatePassword(next);
+    return u.ok ? { ok: true } : { ok: false, error: u.error };
+  }
+  /** ส่งลิงก์ตั้งรหัสผ่านใหม่ทางอีเมล (ไม่บอกว่าอีเมลนั้นมีบัญชีหรือไม่) */
+  async function sendResetEmail(email) {
+    const e = normEmail(email);
+    if (!validEmail(e)) return { ok: false, error: 'bad_email' };
+    return R.sendReset(e, g.location.origin + g.location.pathname + '?recovery=1');
+  }
+  /** ตั้งรหัสผ่านใหม่หลังกดลิงก์จากอีเมล (ตอนนั้นมี session ชั่วคราวจากลิงก์) */
+  async function completeRecovery(newPassword) {
+    if (!sessionId || !recovery) return { ok: false, error: 'invalid' };
+    if (!newPassword || newPassword.length < 6) return { ok: false, error: 'short_password' };
+    const r = await R.updatePassword(newPassword);
+    if (r.ok) recovery = false;
+    return r;
+  }
+  function cloudDelete() {
+    const s = syncer;
+    const id = sessionId;
+    if (s) s.stop();
+    syncer = null;
+    sessionId = null;
+    db = null;
+    remoteUser = null;
+    recovery = false;
+    ls.del(keyData(id));
+    ls.del(dirtyKey(id));
+    emit('session');
+    R.deleteAccount(); // ลบที่เซิร์ฟเวอร์ (cascade ทุกตาราง) แล้วออกจากระบบ
+  }
+  /** ดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์ (เปิดแท็บกลับมา/สลับเครื่อง) เฉพาะเมื่อไม่มีส่วนที่ยังรอซิงก์ */
+  async function refresh() {
+    if (!cloud || !sessionId || !syncer) return false;
+    const stale = () => !syncer || syncer.isBusy() || ls.get(dirtyKey(sessionId), false);
+    if (stale()) return false;
+    try {
+      const remoteDb = await R.loadAll(sessionId);
+      if (stale()) return false;
+      db = normalizeDb(remoteDb);
+      syncer.rebase(remoteDb);
+      persistOk = ls.set(keyData(sessionId), db);
+      emit('data');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  async function initCloud() {
+    entering = true;
+    try {
+      const user = await R.getUser();
+      if (user) await enterSession(user);
+    } catch (e) {
+      console.warn('เริ่มระบบออนไลน์ไม่สำเร็จ', e && e.message);
+    } finally {
+      entering = false;
+    }
+    if (sessionId && /[?&]recovery=1/.test(g.location.search)) {
+      recovery = true; // เปิดจากลิงก์ในอีเมลรีเซ็ตรหัสผ่าน
+      try {
+        g.history.replaceState(null, '', g.location.pathname + '#/auth/reset');
+      } catch (e) { /* ignore */ }
+    }
+    R.onAuth((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        if (sessionId && !entering) forgetLocal();
+      } else if (event === 'PASSWORD_RECOVERY') {
+        recovery = true;
+        emit('recovery');
+      } else if (event === 'SIGNED_IN' && session && !sessionId && !entering) {
+        entering = true; // เข้าสู่ระบบจากแท็บอื่น
+        enterSession(session.user)
+          .then((r) => r.ok && emit('session'))
+          .finally(() => (entering = false));
+      }
+    });
+  }
+
   // ---------- บัญชี ----------
   async function signup({ name, email, password, consent }) {
     const e = normEmail(email);
     if (!validEmail(e)) return { ok: false, error: 'bad_email' };
     if (!password || password.length < 6) return { ok: false, error: 'short_password' };
     if (!consent) return { ok: false, error: 'no_consent' };
+    if (cloud) return cloudSignup(e, name, password);
     if (accounts.some((a) => a.email === e)) return { ok: false, error: 'duplicate' };
     const id = uid();
     const pw = await hashSecret(password);
@@ -240,6 +459,7 @@
 
   async function login({ email, password }) {
     const e = normEmail(email);
+    if (cloud) return cloudLogin(e, password);
     const acc = accounts.find((a) => a.email === e);
     if (!acc || !(await verifySecret(password || '', acc.pw))) return { ok: false, error: 'invalid' };
     sessionId = acc.id;
@@ -256,6 +476,7 @@
   }
 
   function logout() {
+    if (cloud) return cloudLogout();
     sessionId = null;
     db = null;
     ls.del(KEY_SESSION);
@@ -264,6 +485,7 @@
 
   /** เปลี่ยนรหัสผ่านขณะล็อกอิน ต้องยืนยันรหัสผ่านเดิมก่อน (กันคนที่หยิบเครื่องที่ล็อกอินค้างไว้) */
   async function changePassword({ current, next }) {
+    if (cloud) return cloudChangePassword(current, next);
     if (!sessionId) return { ok: false, error: 'no_session' };
     const acc = accounts.find((a) => a.id === sessionId);
     if (!acc || !(await verifySecret(current || '', acc.pw))) return { ok: false, error: 'wrong_current' };
@@ -330,6 +552,7 @@
   }
 
   function accountInfo() {
+    if (cloud) return remoteUser ? { id: remoteUser.id, email: remoteUser.email, created_at: remoteUser.created_at } : null;
     const acc = accounts.find((a) => a.id === sessionId);
     return acc ? { id: acc.id, email: acc.email, created_at: acc.created_at } : null;
   }
@@ -362,10 +585,13 @@
     Object.assign(db.profile, keep);
     db.consents = consents;
     persist();
+    // events/feedback ไม่ถูกลบตามปกติ (append-only) ต้องสั่งลบฝั่งเซิร์ฟเวอร์เอง
+    if (syncer) syncer.wipeAppendOnly().catch(() => ls.set(dirtyKey(sessionId), 1));
   }
 
   /** ลบบัญชี: ข้อมูลทุกตารางหายทันที */
   function deleteAccount() {
+    if (cloud) return cloudDelete();
     const id = sessionId;
     accounts = accounts.filter((a) => a.id !== id);
     ls.set(KEY_ACCOUNTS, accounts);
@@ -862,8 +1088,22 @@
     return RD.engine.buildDay(input);
   }
 
+  const ready = cloud ? initCloud() : Promise.resolve();
+
   RD.store = {
     // session
+    cloud,
+    ready,
+    sendResetEmail,
+    completeRecovery,
+    inRecovery: () => cloud && recovery && !!sessionId,
+    syncState: () => (syncError ? 'error' : 'ok'),
+    takeLoadError: () => {
+      const r = loadError;
+      loadError = false;
+      return r;
+    },
+    refresh,
     isLoggedIn: () => !!(sessionId && db),
     userId: () => sessionId,
     accountInfo,
