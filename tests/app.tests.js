@@ -158,6 +158,14 @@
       ok(plan.includes('11:50 น.'));
       ok(plan.includes('11:20 น.'));
     });
+    test('การ์ด ถัดไป: ยังไม่ถึงเวลาบอก "ช่วง HH:mm" เปิดแอปช้าเกิน 30 นาทีบอกว่าเลยมาแล้ว ทำตอนนี้ได้เลย', () => {
+      const card = () => renderPage('today').root.querySelector('.next-card').textContent;
+      ok(card().includes('ช่วง 11:50 น.'), card());
+      notOk(card().includes('เลยช่วง'));
+      setNow('17:30');
+      ok(card().includes('เลยช่วง 11:50 น. มาแล้ว ทำตอนนี้ได้เลย'), card());
+      setNow('12:00');
+    });
 
     test('ยังไม่บันทึก ≠ ข้าม: ค่าเริ่มต้นคือ unknown, ไม่กินมื้อนี้คือ skipped, ล้างกลับเป็น unknown ได้', () => {
       eq(S.getLog(DAY).meal_status, 'unknown');
@@ -382,7 +390,7 @@
       const help = renderPage('help').text;
       ok(help.includes('1323') && help.includes('ข้อมูลในแอปไม่ใช่คำแนะนำทางการแพทย์'));
       const landing = renderPage('landing').text;
-      for (const s of ['วันนี้ไม่ต้องเริ่มใหม่ทั้งชีวิต แค่รีเซ็ตวันนี้', 'เริ่มรีเซ็ตวันนี้', 'สี่เสาของวัน', 'ใช้เวลาตั้งค่าไม่ถึง 2 นาที']) ok(landing.includes(s), s);
+      for (const s of ['วันนี้ไม่ต้องเริ่มใหม่ทั้งชีวิต แค่รีเซ็ตวันนี้', 'เริ่มรีเซ็ตวันนี้', 'สี่เสาของวัน', 'ใช้เวลาตั้งค่าไม่ถึง 2 นาที', 'เคยเป็นแบบนี้ไหม', 'วันเลื่อนไปพรุ่งนี้']) ok(landing.includes(s), s);
     });
     test('แผ่น/เมนู/ไทม์พิกเกอร์ที่เปิดจากหน้าต่าง ๆ ไม่มีคำต้องห้ามและไม่มี AM/PM', () => {
       setNow('12:00');

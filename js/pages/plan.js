@@ -68,14 +68,14 @@
       const root = h('div', { class: 'stack' });
       const meal = plan.nextMeal;
 
-      // ชิป: ตื่นแล้ว · กินแล้ว · พลังงาน
+      // ชิป: เวลาตื่น · มื้อแรก · พลังงาน (ยังไม่บันทึก = ชวนบันทึก ไม่ใช้คำว่า "แล้ว" ที่อ่านเหมือนสถานะ)
       root.append(
         h(
           'div',
           { class: 'chips', style: { marginTop: '4px' } },
-          h('button', { class: 'chip', type: 'button', onClick: () => A.logWake(plan) }, icon('clock', 16), plan.wake.at ? plan.wake.chipText : 'ตื่นแล้ว'),
+          h('button', { class: 'chip', type: 'button', onClick: () => A.logWake(plan) }, icon('clock', 16), plan.wake.at ? plan.wake.chipText : 'บันทึกเวลาตื่น'),
           plan.trackMeals
-            ? h('button', { class: 'chip', type: 'button', onClick: () => A.logMeal(plan) }, icon('bowl', 16), meal.status === 'logged' ? `กินแล้ว ${T.formatTime(meal.at)}` : meal.status === 'skipped' ? 'ไม่กินมื้อนี้' : 'กินแล้ว')
+            ? h('button', { class: 'chip', type: 'button', onClick: () => A.logMeal(plan) }, icon('bowl', 16), meal.status === 'logged' ? `กินแล้ว ${T.formatTime(meal.at)}` : meal.status === 'skipped' ? 'ไม่กินมื้อนี้' : 'บันทึกมื้อแรก')
             : null,
           h('button', { class: 'chip tint', type: 'button', onClick: () => A.editEnergy(plan) }, icon('feather', 16), plan.copy.energyChip)
         )

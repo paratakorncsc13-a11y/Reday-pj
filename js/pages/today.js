@@ -107,13 +107,15 @@
       // ปุ่มหลักปุ่มเดียว
       const nx = plan.next;
       const nextTime = nx.at && nx.kind !== 'wake' ? T.formatTime(nx.at) : null;
+      // เปิดแอปช้ากว่าเวลาที่แนะนำ: บอกว่าเลยมาแล้ว ทำตอนนี้ได้เลย แทนที่จะโชว์เวลาในอดีตเฉย ๆ
+      const nextLate = nextTime && S.now().getTime() - new Date(nx.at).getTime() > RD.config.mealGraceMin * 60000;
       root.append(
         h(
           'section',
           { class: 'card next-card', 'aria-label': 'สิ่งถัดไป' },
           h('div', { class: 'kicker' }, nx.kind === 'done' ? 'วันนี้' : 'ถัดไป'),
           h('div', { class: 'next-title' }, nx.kind === 'wake' ? 'เริ่มจากเวลาตื่นของวันนี้' : nx.kind === 'done' ? 'วันนี้พอแล้ว พักได้เลย' : nx.title),
-          nextTime ? h('div', { class: 'muted' }, `ช่วง ${nextTime}`) : null,
+          nextTime ? h('div', { class: 'muted' }, nextLate ? `เลยช่วง ${nextTime} มาแล้ว ทำตอนนี้ได้เลย` : `ช่วง ${nextTime}`) : null,
           nx.action
             ? h('button', { class: 'btn primary big block', type: 'button', onClick: () => A.run(nx.action, plan, ctx.go) }, nx.label)
             : null,

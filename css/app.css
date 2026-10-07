@@ -265,6 +265,14 @@ textarea.input { min-height: 96px; resize: vertical; }
 .pillars { display: grid; gap: 12px; margin-top: 8px; }
 .pillar-card { display: flex; gap: 14px; }
 .pillar-card h3 { font-size: 18px; margin-bottom: 2px; }
+/* วงจรวันเลื่อน (pain point) บน Landing */
+.loop-card { margin-top: 22px; }
+.loop-card .section-title { margin: 0 0 10px; }
+.loop { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.loop li { display: inline-flex; align-items: center; gap: 6px; }
+.loop li span { padding: 4px 12px; border-radius: 999px; background: var(--surface-2); font-size: 15px; font-weight: 600; }
+.loop li:not(:last-child)::after { content: "›"; color: var(--primary); font-weight: 700; }
+.loop li:last-child span { background: #FCEBD2; color: var(--primary-ink); }
 .footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line-soft); font-size: 14px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
 .footer .links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .footer a { min-height: 44px; display: inline-flex; align-items: center; }

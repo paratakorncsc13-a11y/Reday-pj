@@ -35,6 +35,18 @@
             // CTA จาก Landing = ผู้ใช้ใหม่ เปิดหน้า สมัคร เสมอ (ไม่ค้างโหมด เข้าสู่ระบบ จากครั้งก่อน)
             h('div', { class: 'cta' }, h('a', { class: 'btn primary big', href: '#/auth', onClick: () => { authState.mode = 'signup'; } }, 'เริ่มรีเซ็ตวันนี้'), h('span', { class: 'muted small' }, 'ใช้เวลาตั้งค่าไม่ถึง 2 นาที'), h('a', { class: 'link-btn', href: '#/guide', style: { alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center' } }, 'ดูวิธีใช้งานก่อน'))
           ),
+          // pain point: วันเลื่อนเพราะวงจร ไม่ใช่ปัญหาจุดเดียว แอปตัดวงจรทีละข้อ (ห้ามใช้คำตำหนิ ชุดทดสอบตรวจคำต้องห้าม)
+          h(
+            'section',
+            { class: 'card loop-card', 'aria-label': 'วงจรวันเลื่อน' },
+            h('h2', { class: 'section-title' }, 'เคยเป็นแบบนี้ไหม'),
+            h(
+              'ol',
+              { class: 'loop' },
+              ...['นอนดึก', 'ตื่นสาย', 'ข้ามข้าวเช้า', 'ไม่มีแรง', 'ผัดงาน ผัดเก็บห้อง', 'วันเลื่อนไปพรุ่งนี้'].map((s) => h('li', null, h('span', null, s)))
+            ),
+            h('p', { class: 'muted' }, 'ปัญหาไม่ได้อยู่ที่จุดเดียว แต่เป็นวงจรที่วนซ้ำทุกวัน ReDay ไม่ได้ให้คุณเริ่มชีวิตใหม่ทั้งหมด แค่ช่วยตัดวงจรทีละข้อ เริ่มจากเวลาตื่นจริงของวันนี้')
+          ),
           h(
             'section',
             null,
